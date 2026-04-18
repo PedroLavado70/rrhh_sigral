@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIGRAL · RRHH & Proyectos</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{
+      --bg:#0b1220;--panel:#121a2b;--panel2:#182338;--line:#24314d;--txt:#e7eefb;--muted:#8ea0c7;
+      --pri:#f59e0b;--ok:#10b981;--info:#3b82f6;--danger:#ef4444;--violet:#8b5cf6;
+      --radius:16px;--shadow:0 14px 34px rgba(0,0,0,.28);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#09111f,#0f172a);color:var(--txt)}
+    .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+    .sidebar{background:rgba(10,16,30,.9);border-right:1px solid var(--line);padding:22px 16px;position:sticky;top:0;height:100vh}
+    .brand{padding:8px 10px 18px;border-bottom:1px solid var(--line);margin-bottom:18px}
+    .brand h1{font-size:18px;margin:0 0 4px}
+    .brand p{margin:0;color:var(--muted);font-size:12px}
+    .nav button{width:100%;text-align:left;padding:12px 14px;border:1px solid transparent;background:transparent;color:var(--muted);border-radius:12px;cursor:pointer;font-size:14px;margin-bottom:6px}
+    .nav button.active,.nav button:hover{background:var(--panel2);border-color:var(--line);color:var(--txt)}
+    .main{padding:24px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+    .title h2{margin:0;font-size:24px}
+    .title p{margin:5px 0 0;color:var(--muted);font-size:13px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    button,.btn{border:none;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
+    .btn-pri{background:var(--pri);color:#151515}
+    .btn-sec{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
+    .btn-ok{background:var(--ok);color:#fff}
+    .btn-danger{background:rgba(239,68,68,.12);color:#ff8f8f;border:1px solid rgba(239,68,68,.28)}
+    .grid{display:grid;gap:16px}
+    .kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .card{background:rgba(18,26,43,.92);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .kpi{padding:18px}
+    .kpi .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .kpi .value{font-size:30px;font-weight:800;margin-top:8px}
+    .kpi .sub{font-size:12px;color:var(--muted);margin-top:6px}
+    .panel{padding:18px}
+    .panel h3{margin:0 0 14px;font-size:16px}
+    .charts{grid-template-columns:1fr 1fr}
+    .chart-wrap{height:320px}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+    .toolbar .filters{display:flex;gap:10px;flex-wrap:wrap}
+    input,select,textarea{width:100%;background:#0d1525;color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit}
+    textarea{min-height:96px;resize:vertical}
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:collapse;min-width:900px}
+    th,td{padding:12px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+    th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+    tr:hover td{background:rgba(255,255,255,.02)}
+    .badge{display:inline-block;padding:4px 9px;border-radius:999px;font-size:12px;font-weight:700}
+    .badge.ok{background:rgba(16,185,129,.14);color:#71f0bf}
+    .badge.warn{background:rgba(245,158,11,.14);color:#ffd37d}
+    .badge.info{background:rgba(59,130,246,.14);color:#94c4ff}
+    .badge.danger{background:rgba(239,68,68,.14);color:#ff9d9d}
+    .hidden{display:none !important}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,.72);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000}
+    .modal-backdrop.open{display:flex}
+    .modal{width:min(860px,100%);max-height:90vh;overflow:auto;background:#111a2b;border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 80px rgba(0,0,0,.45);padding:22px}
+    .modal h3{margin:0 0 18px}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .form-grid .full{grid-column:1/-1}
+    .field label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px}
+    .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap}
+    .notice{padding:12px 14px;border:1px solid var(--line);background:#0d1525;border-radius:14px;color:var(--muted);font-size:13px}
+    .empty{padding:22px;text-align:center;color:var(--muted)}
+    .footer-note{margin-top:16px;color:var(--muted);font-size:12px}
+    @media (max-width:1100px){.kpis,.charts{grid-template-columns:1fr 1fr}}
+    @media (max-width:880px){.app{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.kpis,.charts,.form-grid{grid-template-columns:1fr}table{min-width:720px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>SIGRAL S.A.</h1>
+        <p>Sistema RRHH & Proyectos</p>
+      </div>
+      <nav class="nav">
+        <button class="active" data-page="dashboard">Dashboard</button>
+        <button data-page="employees">Empleados</button>
+        <button data-page="projects">Proyectos</button>
+        <button data-page="assignments">Asignaciones</button>
+      </nav>
+      <div class="footer-note">Esta versión ya guarda en Supabase a través de Netlify Functions.</div>
+    </aside>
+
+    <main class="main">
+      <section id="page-dashboard" class="page-section">
+        <div class="top">
+          <div class="title">
+            <h2>Dashboard</h2>
+            <p>Resumen general de empleados, proyectos y asignaciones.</p>
+          </div>
+          <div class="actions">
+            <button class="btn btn-pri" onclick="openEmployeeModal()">+ Nuevo empleado</button>
+            <button class="btn btn-sec" onclick="openProjectModal()">+ Nuevo proyecto</button>
+            <button class="btn btn-ok" onclick="openAssignmentModal()">+ Nueva asignación</button>
+          </div>
+        </div>
+
+        <div class="grid kpis">
+          <div class="card kpi"><div class="label">Empleados</div><div class="value" id="kpi-employees">0</div><div class="sub" id="kpi-active-employees">0 activos</div></div>
+          <div class="card kpi"><div class="label">Proyectos</div><div class="value" id="kpi-projects">0</div><div class="sub" id="kpi-active-projects">0 en curso</div></div>
+          <div class="card kpi"><div class="label">Asignaciones</div><div class="value" id="kpi-assignments">0</div><div class="sub" id="kpi-ending-assignments">0 por terminar</div></div>
+          <div class="card kpi"><div class="label">Alertas de contrato</div><div class="value" id="kpi-contracts">0</div><div class="sub">Vencen en 30 días o menos</div></div>
+        </div>
+
+        <div class="grid charts" style="margin-top:16px;">
+          <div class="card panel">
+            <h3>Empleados por profesión</h3>
+            <div class="chart-wrap"><canvas id="chartProfessions"></canvas></div>
+          </div>
+          <div class="card panel">
+            <h3>Proyectos por sector</h3>
+            <div class="chart-wrap"><canvas id="chartSectors"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid charts" style="margin-top:16px;">
+          <div class="card panel">
+            <h3>Contratos por vencer</h3>
+            <div id="contracts-alerts"></div>
+          </div>
+          <div class="card panel">
+            <h3>Asignaciones por terminar</h3>
+            <div id="assignments-alerts"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="page-employees" class="page-section hidden">
+        <div class="top">
+          <div class="title">
+            <h2>Empleados</h2>
+            <p>Registro y control del personal.</p>
+          </div>
+          <div class="actions">
+            <input id="employeeSearch" placeholder="Buscar por nombre, código, DNI o cargo" style="width:320px;max-width:100%" oninput="renderEmployees()" />
+            <button class="btn btn-pri" onclick="openEmployeeModal()">+ Nuevo empleado</button>
+          </div>
+        </div>
+        <div class="card panel">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Código</th><th>Empleado</th><th>DNI</th><th>Profesión</th><th>Cargo</th><th>Área</th><th>Estado</th><th>Contrato</th><th>Fin contrato</th><th>Acciones</th></tr></thead>
+            <tbody id="employeesTable"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <section id="page-projects" class="page-section hidden">
+        <div class="top">
+          <div class="title">
+            <h2>Proyectos</h2>
+            <p>Registro maestro de proyectos.</p>
+          </div>
+          <div class="actions">
+            <input id="projectSearch" placeholder="Buscar por nombre, código, cliente o sector" style="width:320px;max-width:100%" oninput="renderProjects()" />
+            <button class="btn btn-sec" onclick="openProjectModal()">+ Nuevo proyecto</button>
+          </div>
+        </div>
+        <div class="card panel">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Código</th><th>Proyecto</th><th>Cliente</th><th>Sector</th><th>Estado</th><th>Inicio</th><th>Fin</th><th>Recursos req.</th><th>Acciones</th></tr></thead>
+            <tbody id="projectsTable"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <section id="page-assignments" class="page-section hidden">
+        <div class="top">
+          <div class="title">
+            <h2>Asignaciones</h2>
+            <p>Relación entre empleados y proyectos.</p>
+          </div>
+          <div class="actions">
+            <input id="assignmentSearch" placeholder="Buscar por proyecto, empleado o rol" style="width:320px;max-width:100%" oninput="renderAssignments()" />
+            <button class="btn btn-ok" onclick="openAssignmentModal()">+ Nueva asignación</button>
+          </div>
+        </div>
+        <div class="card panel">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Proyecto</th><th>Empleado</th><th>Rol</th><th>% Participación</th><th>Inicio</th><th>Fin</th><th>Acciones</th></tr></thead>
+            <tbody id="assignmentsTable"></tbody>
+          </table></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="employeeModalBackdrop">
+    <div class="modal">
+      <h3 id="employeeModalTitle">Nuevo empleado</h3>
+      <div class="form-grid">
+        <div class="field"><label>Código *</label><input id="emp_code"></div>
+        <div class="field"><label>DNI</label><input id="emp_dni"></div>
+        <div class="field"><label>Nombres *</label><input id="emp_first_name"></div>
+        <div class="field"><label>Apellidos *</label><input id="emp_last_name"></div>
+        <div class="field"><label>Email</label><input id="emp_email" type="email"></div>
+        <div class="field"><label>Teléfono</label><input id="emp_phone"></div>
+        <div class="field"><label>Profesión</label><input id="emp_profession"></div>
+        <div class="field"><label>Especialidad</label><input id="emp_specialty"></div>
+        <div class="field"><label>Cargo</label><input id="emp_position"></div>
+        <div class="field"><label>Área</label><input id="emp_area"></div>
+        <div class="field"><label>Salario</label><input id="emp_salary" type="number" step="0.01"></div>
+        <div class="field"><label>Estado</label><select id="emp_status"><option>Activo</option><option>Inactivo</option><option>Retirado</option></select></div>
+        <div class="field"><label>Tipo de contrato</label><input id="emp_contract_type"></div>
+        <div class="field"><label>Fecha de ingreso</label><input id="emp_start_date" type="date"></div>
+        <div class="field"><label>Fin de contrato</label><input id="emp_contract_end_date" type="date"></div>
+        <div class="field full"><label>Observaciones</label><textarea id="emp_notes"></textarea></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-sec" onclick="closeEmployeeModal()">Cancelar</button>
+        <button class="btn btn-pri" onclick="saveEmployee()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="projectModalBackdrop">
+    <div class="modal">
+      <h3 id="projectModalTitle">Nuevo proyecto</h3>
+      <div class="form-grid">
+        <div class="field"><label>Código *</label><input id="pro_code"></div>
+        <div class="field"><label>Nombre *</label><input id="pro_name"></div>
+        <div class="field"><label>Cliente</label><input id="pro_client"></div>
+        <div class="field"><label>Sector</label><input id="pro_sector"></div>
+        <div class="field"><label>Tipo de proyecto</label><input id="pro_project_type"></div>
+        <div class="field"><label>Estado</label><select id="pro_status"><option>Formulación</option><option>En curso</option><option>Licitación</option><option>Concluido</option><option>Suspendido</option></select></div>
+        <div class="field"><label>Fecha inicio</label><input id="pro_start_date" type="date"></div>
+        <div class="field"><label>Fecha fin</label><input id="pro_end_date" type="date"></div>
+        <div class="field"><label>Monto</label><input id="pro_amount" type="number" step="0.01"></div>
+        <div class="field"><label>Recursos requeridos</label><input id="pro_required_resources" type="number" step="1"></div>
+        <div class="field"><label>Ubicación</label><input id="pro_location"></div>
+        <div class="field"><label>Gerente / Responsable</label><input id="pro_manager_name"></div>
+        <div class="field full"><label>Descripción</label><textarea id="pro_description"></textarea></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-sec" onclick="closeProjectModal()">Cancelar</button>
+        <button class="btn btn-sec" style="background:var(--violet);color:#fff" onclick="saveProject()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="assignmentModalBackdrop">
+    <div class="modal">
+      <h3 id="assignmentModalTitle">Nueva asignación</h3>
+      <div class="form-grid">
+        <div class="field"><label>Proyecto *</label><select id="asg_project_id"></select></div>
+        <div class="field"><label>Empleado *</label><select id="asg_employee_id"></select></div>
+        <div class="field"><label>Rol / Puesto</label><input id="asg_role_name"></div>
+        <div class="field"><label>% Participación</label><input id="asg_participation_pct" type="number" min="0" max="100" step="0.01" value="100"></div>
+        <div class="field"><label>Fecha inicio *</label><input id="asg_start_date" type="date"></div>
+        <div class="field"><label>Fecha fin</label><input id="asg_end_date" type="date"></div>
+        <div class="field full"><label>Observaciones</label><textarea id="asg_notes"></textarea></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-sec" onclick="closeAssignmentModal()">Cancelar</button>
+        <button class="btn btn-ok" onclick="saveAssignment()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      employees: [],
+      projects: [],
+      assignments: [],
+      editingEmployeeId: null,
+      editingProjectId: null,
+      editingAssignmentId: null,
+      charts: {}
+    };
+
+    const fmtDate = (v) => v ? new Date(v + 'T00:00:00').toLocaleDateString('es-PE') : '';
+    const daysBetween = (dateString) => {
+      if (!dateString) return null;
+      const today = new Date(); today.setHours(0,0,0,0);
+      const target = new Date(dateString + 'T00:00:00');
+      return Math.ceil((target - today) / 86400000);
+    };
+    const escapeHtml = (v='') => String(v).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+    const api = async (path, options={}) => {
+      const res = await fetch(`/api${path}`, {
+        headers: { 'Content-Type':'application/json', ...(options.headers||{}) },
+        ...options
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload.error || 'Error de servidor');
+      return payload.data;
+    };
+
+    document.querySelectorAll('.nav button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden'));
+        document.getElementById(`page-${btn.dataset.page}`).classList.remove('hidden');
+      });
+    });
+
+    async function loadAll() {
+      try {
+        const [employees, projects, assignments] = await Promise.all([
+          api('/employees'), api('/projects'), api('/assignments')
+        ]);
+        state.employees = employees || [];
+        state.projects = projects || [];
+        state.assignments = assignments || [];
+        refreshAll();
+      } catch (error) {
+        alert('No se pudo cargar la información. Revisa que Supabase y Netlify estén conectados.\n\nDetalle: ' + error.message);
+      }
+    }
+
+    function refreshAll() {
+      renderDashboard();
+      renderEmployees();
+      renderProjects();
+      renderAssignments();
+      fillSelects();
+    }
+
+    function renderDashboard() {
+      const activeEmployees = state.employees.filter(x => x.status === 'Activo').length;
+      const activeProjects = state.projects.filter(x => ['En curso','Licitación','Formulación'].includes(x.status)).length;
+      const endingAssignments = state.assignments.filter(x => { const d = daysBetween(x.end_date); return d !== null && d >= 0 && d <= 30; }).length;
+      const contractsDue = state.employees.filter(x => { const d = daysBetween(x.contract_end_date); return d !== null && d >= 0 && d <= 30; }).length;
+
+      document.getElementById('kpi-employees').textContent = state.employees.length;
+      document.getElementById('kpi-active-employees').textContent = `${activeEmployees} activos`;
+      document.getElementById('kpi-projects').textContent = state.projects.length;
+      document.getElementById('kpi-active-projects').textContent = `${activeProjects} activos`;
+      document.getElementById('kpi-assignments').textContent = state.assignments.length;
+      document.getElementById('kpi-ending-assignments').textContent = `${endingAssignments} por terminar`;
+      document.getElementById('kpi-contracts').textContent = contractsDue;
+
+      const professionCounts = countBy(state.employees, 'profession');
+      const sectorCounts = countBy(state.projects, 'sector');
+      drawChart('chartProfessions', 'bar', professionCounts.labels, professionCounts.values, 'Profesión');
+      drawChart('chartSectors', 'doughnut', sectorCounts.labels, sectorCounts.values, 'Sector');
+
+      const dueContracts = state.employees
+        .map(e => ({...e, days: daysBetween(e.contract_end_date)}))
+        .filter(e => e.days !== null && e.days >= 0 && e.days <= 30)
+        .sort((a,b) => a.days - b.days);
+
+      document.getElementById('contracts-alerts').innerHTML = dueContracts.length
+        ? dueContracts.map(e => `<div class="notice" style="margin-bottom:10px"><strong>${escapeHtml(e.first_name)} ${escapeHtml(e.last_name)}</strong><br>Contrato vence en ${e.days} día(s) · ${fmtDate(e.contract_end_date)} · ${escapeHtml(e.position || 'Sin cargo')}</div>`).join('')
+        : '<div class="empty">No hay contratos por vencer en los próximos 30 días.</div>';
+
+      const dueAssignments = state.assignments
+        .map(a => ({...a, days: daysBetween(a.end_date)}))
+        .filter(a => a.days !== null && a.days >= 0 && a.days <= 30)
+        .sort((a,b) => a.days - b.days);
+
+      document.getElementById('assignments-alerts').innerHTML = dueAssignments.length
+        ? dueAssignments.map(a => `<div class="notice" style="margin-bottom:10px"><strong>${escapeHtml(a.project?.name || '')}</strong><br>${escapeHtml(a.employee?.first_name || '')} ${escapeHtml(a.employee?.last_name || '')} · vence en ${a.days} día(s) · ${fmtDate(a.end_date)}</div>`).join('')
+        : '<div class="empty">No hay asignaciones por vencer en los próximos 30 días.</div>';
+    }
+
+    function countBy(rows, field) {
+      const map = new Map();
+      rows.forEach(r => {
+        const key = (r[field] || 'Sin dato').trim?.() || r[field] || 'Sin dato';
+        map.set(key, (map.get(key) || 0) + 1);
+      });
+      const entries = [...map.entries()].sort((a,b) => b[1] - a[1]).slice(0,8);
+      return { labels: entries.map(x => x[0]), values: entries.map(x => x[1]) };
+    }
+
+    function drawChart(canvasId, type, labels, data, label) {
+      const ctx = document.getElementById(canvasId);
+      if (state.charts[canvasId]) state.charts[canvasId].destroy();
+      state.charts[canvasId] = new Chart(ctx, {
+        type,
+        data: { labels, datasets: [{ label, data }] },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:'#dbe5ff' } } }, scales: type === 'doughnut' ? {} : { x:{ ticks:{ color:'#aab9d8' }, grid:{ color:'#23314c' } }, y:{ ticks:{ color:'#aab9d8' }, grid:{ color:'#23314c' } } } }
+      });
+    }
+
+    function renderEmployees() {
+      const q = document.getElementById('employeeSearch').value.trim().toLowerCase();
+      const rows = state.employees.filter(e => [e.code,e.dni,e.first_name,e.last_name,e.profession,e.position,e.area].join(' ').toLowerCase().includes(q));
+      const html = rows.length ? rows.map(e => `
+        <tr>
+          <td>${escapeHtml(e.code)}</td>
+          <td>${escapeHtml(e.first_name)} ${escapeHtml(e.last_name)}</td>
+          <td>${escapeHtml(e.dni || '')}</td>
+          <td>${escapeHtml(e.profession || '')}</td>
+          <td>${escapeHtml(e.position || '')}</td>
+          <td>${escapeHtml(e.area || '')}</td>
+          <td>${statusBadge(e.status)}</td>
+          <td>${escapeHtml(e.contract_type || '')}</td>
+          <td>${fmtDate(e.contract_end_date)}</td>
+          <td>
+            <button class="btn btn-sec" onclick="openEmployeeModal('${e.id}')">Editar</button>
+            <button class="btn btn-danger" onclick="removeEmployee('${e.id}')">Eliminar</button>
+          </td>
+        </tr>`).join('') : '<tr><td colspan="10" class="empty">No hay empleados registrados.</td></tr>';
+      document.getElementById('employeesTable').innerHTML = html;
+    }
+
+    function renderProjects() {
+      const q = document.getElementById('projectSearch').value.trim().toLowerCase();
+      const rows = state.projects.filter(p => [p.code,p.name,p.client,p.sector,p.status].join(' ').toLowerCase().includes(q));
+      const html = rows.length ? rows.map(p => `
+        <tr>
+          <td>${escapeHtml(p.code)}</td>
+          <td>${escapeHtml(p.name)}</td>
+          <td>${escapeHtml(p.client || '')}</td>
+          <td>${escapeHtml(p.sector || '')}</td>
+          <td>${statusBadge(p.status)}</td>
+          <td>${fmtDate(p.start_date)}</td>
+          <td>${fmtDate(p.end_date)}</td>
+          <td>${escapeHtml(String(p.required_resources ?? '0'))}</td>
+          <td>
+            <button class="btn btn-sec" onclick="openProjectModal('${p.id}')">Editar</button>
+            <button class="btn btn-danger" onclick="removeProject('${p.id}')">Eliminar</button>
+          </td>
+        </tr>`).join('') : '<tr><td colspan="9" class="empty">No hay proyectos registrados.</td></tr>';
+      document.getElementById('projectsTable').innerHTML = html;
+    }
+
+    function renderAssignments() {
+      const q = document.getElementById('assignmentSearch').value.trim().toLowerCase();
+      const rows = state.assignments.filter(a => [a.project?.name,a.employee?.first_name,a.employee?.last_name,a.role_name].join(' ').toLowerCase().includes(q));
+      const html = rows.length ? rows.map(a => `
+        <tr>
+          <td>${escapeHtml(a.project?.name || '')}</td>
+          <td>${escapeHtml(a.employee?.first_name || '')} ${escapeHtml(a.employee?.last_name || '')}</td>
+          <td>${escapeHtml(a.role_name || '')}</td>
+          <td>${escapeHtml(String(a.participation_pct ?? 0))}%</td>
+          <td>${fmtDate(a.start_date)}</td>
+          <td>${fmtDate(a.end_date)}</td>
+          <td>
+            <button class="btn btn-sec" onclick="openAssignmentModal('${a.id}')">Editar</button>
+            <button class="btn btn-danger" onclick="removeAssignment('${a.id}')">Eliminar</button>
+          </td>
+        </tr>`).join('') : '<tr><td colspan="7" class="empty">No hay asignaciones registradas.</td></tr>';
+      document.getElementById('assignmentsTable').innerHTML = html;
+    }
+
+    function statusBadge(status='') {
+      const cls = /activo|curso|concluido/i.test(status) ? 'ok' : /retirado|suspendido/i.test(status) ? 'danger' : 'warn';
+      return `<span class="badge ${cls}">${escapeHtml(status)}</span>`;
+    }
+
+    function fillSelects() {
+      const pSel = document.getElementById('asg_project_id');
+      const eSel = document.getElementById('asg_employee_id');
+      pSel.innerHTML = '<option value="">Seleccionar proyecto</option>' + state.projects.map(p => `<option value="${p.id}">${escapeHtml(p.code)} · ${escapeHtml(p.name)}</option>`).join('');
+      eSel.innerHTML = '<option value="">Seleccionar empleado</option>' + state.employees.map(e => `<option value="${e.id}">${escapeHtml(e.code)} · ${escapeHtml(e.first_name)} ${escapeHtml(e.last_name)}</option>`).join('');
+    }
+
+    function openEmployeeModal(id=null) {
+      state.editingEmployeeId = id;
+      document.getElementById('employeeModalTitle').textContent = id ? 'Editar empleado' : 'Nuevo empleado';
+      const e = state.employees.find(x => x.id === id) || {};
+      setForm('emp', {
+        code:e.code, dni:e.dni, first_name:e.first_name, last_name:e.last_name, email:e.email, phone:e.phone,
+        profession:e.profession, specialty:e.specialty, position:e.position, area:e.area, salary:e.salary,
+        status:e.status || 'Activo', contract_type:e.contract_type, start_date:e.start_date, contract_end_date:e.contract_end_date, notes:e.notes
+      });
+      document.getElementById('employeeModalBackdrop').classList.add('open');
+    }
+    function closeEmployeeModal(){ document.getElementById('employeeModalBackdrop').classList.remove('open'); }
+
+    function openProjectModal(id=null) {
+      state.editingProjectId = id;
+      document.getElementById('projectModalTitle').textContent = id ? 'Editar proyecto' : 'Nuevo proyecto';
+      const p = state.projects.find(x => x.id === id) || {};
+      setForm('pro', {
+        code:p.code, name:p.name, client:p.client, sector:p.sector, project_type:p.project_type, status:p.status || 'Formulación',
+        start_date:p.start_date, end_date:p.end_date, amount:p.amount, required_resources:p.required_resources,
+        location:p.location, manager_name:p.manager_name, description:p.description
+      });
+      document.getElementById('projectModalBackdrop').classList.add('open');
+    }
+    function closeProjectModal(){ document.getElementById('projectModalBackdrop').classList.remove('open'); }
+
+    function openAssignmentModal(id=null) {
+      state.editingAssignmentId = id;
+      document.getElementById('assignmentModalTitle').textContent = id ? 'Editar asignación' : 'Nueva asignación';
+      fillSelects();
+      const a = state.assignments.find(x => x.id === id) || {};
+      setForm('asg', {
+        project_id:a.project_id, employee_id:a.employee_id, role_name:a.role_name,
+        participation_pct:a.participation_pct ?? 100, start_date:a.start_date, end_date:a.end_date, notes:a.notes
+      });
+      document.getElementById('assignmentModalBackdrop').classList.add('open');
+    }
+    function closeAssignmentModal(){ document.getElementById('assignmentModalBackdrop').classList.remove('open'); }
+
+    function setForm(prefix, data) {
+      Object.entries(data).forEach(([key,val]) => {
+        const el = document.getElementById(`${prefix}_${key}`);
+        if (el) el.value = val ?? '';
+      });
+    }
+    function getForm(prefix, fields) {
+      const obj = {};
+      fields.forEach(f => obj[f] = document.getElementById(`${prefix}_${f}`).value || null);
+      return obj;
+    }
+
+    async function saveEmployee() {
+      const body = getForm('emp', ['code','dni','first_name','last_name','email','phone','profession','specialty','position','area','salary','status','contract_type','start_date','contract_end_date','notes']);
+      if (!body.code || !body.first_name || !body.last_name) return alert('Completa al menos código, nombres y apellidos.');
+      try {
+        if (state.editingEmployeeId) {
+          await api(`/employees/${state.editingEmployeeId}`, { method:'PUT', body: JSON.stringify(body) });
+        } else {
+          await api('/employees', { method:'POST', body: JSON.stringify(body) });
+        }
+        closeEmployeeModal();
+        await loadAll();
+      } catch (error) { alert('No se pudo guardar el empleado.\n' + error.message); }
+    }
+
+    async function saveProject() {
+      const body = getForm('pro', ['code','name','client','sector','project_type','status','start_date','end_date','amount','required_resources','location','manager_name','description']);
+      if (!body.code || !body.name) return alert('Completa al menos código y nombre del proyecto.');
+      if (body.required_resources !== null) body.required_resources = Number(body.required_resources || 0);
+      try {
+        if (state.editingProjectId) {
+          await api(`/projects/${state.editingProjectId}`, { method:'PUT', body: JSON.stringify(body) });
+        } else {
+          await api('/projects', { method:'POST', body: JSON.stringify(body) });
+        }
+        closeProjectModal();
+        await loadAll();
+      } catch (error) { alert('No se pudo guardar el proyecto.\n' + error.message); }
+    }
+
+    async function saveAssignment() {
+      const body = getForm('asg', ['project_id','employee_id','role_name','participation_pct','start_date','end_date','notes']);
+      if (!body.project_id || !body.employee_id || !body.start_date) return alert('Completa proyecto, empleado y fecha de inicio.');
+      body.participation_pct = Number(body.participation_pct || 100);
+      try {
+        if (state.editingAssignmentId) {
+          await api(`/assignments/${state.editingAssignmentId}`, { method:'PUT', body: JSON.stringify(body) });
+        } else {
+          await api('/assignments', { method:'POST', body: JSON.stringify(body) });
+        }
+        closeAssignmentModal();
+        await loadAll();
+      } catch (error) { alert('No se pudo guardar la asignación.\n' + error.message); }
+    }
+
+    async function removeEmployee(id) {
+      if (!confirm('¿Eliminar este empleado?')) return;
+      try { await api(`/employees/${id}`, { method:'DELETE' }); await loadAll(); }
+      catch (error) { alert('No se pudo eliminar.\n' + error.message); }
+    }
+    async function removeProject(id) {
+      if (!confirm('¿Eliminar este proyecto?')) return;
+      try { await api(`/projects/${id}`, { method:'DELETE' }); await loadAll(); }
+      catch (error) { alert('No se pudo eliminar.\n' + error.message); }
+    }
+    async function removeAssignment(id) {
+      if (!confirm('¿Eliminar esta asignación?')) return;
+      try { await api(`/assignments/${id}`, { method:'DELETE' }); await loadAll(); }
+      catch (error) { alert('No se pudo eliminar.\n' + error.message); }
+    }
+
+    document.querySelectorAll('.modal-backdrop').forEach(m => m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('open'); }));
+    loadAll();
+  </script>
+</body>
+</html>
